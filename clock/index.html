@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>24-Hour Clock — Gui's Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    header.site-header { padding-top: 16px; }
+    a.home-link { display: inline-block; margin-bottom: 6px; }
+
+    main.clock-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .dial-wrap {
+      width: min(90vw, 480px);
+      aspect-ratio: 1 / 1;
+      position: relative;
+    }
+
+    #dial {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 0 rgba(43, 37, 64, 0.15));
+    }
+
+    .badge-text {
+      font-family: 'Baloo 2', 'Fredoka', sans-serif;
+      font-weight: 700;
+      fill: #2b2540;
+      text-anchor: middle;
+      dominant-baseline: central;
+      font-size: 26px;
+    }
+
+    .readout {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600;
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      text-align: center;
+    }
+
+    .readout .big-time {
+      font-size: clamp(2.2rem, 8vw, 3.2rem);
+      display: block;
+      color: var(--accent);
+    }
+
+    .readout .daypart {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .daypart.day { background: #ffe89b; color: #6b4e00; }
+    .daypart.night { background: #2e2a55; color: #ffe89b; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="home-link" href="/">← All tools</a>
+    <h1>🕐 What time is it?</h1>
+    <p>One trip all the way around = one whole day</p>
+  </header>
+
+  <main class="clock-main">
+    <div class="dial-wrap">
+      <svg id="dial" viewBox="0 0 400 400"></svg>
+    </div>
+    <div class="readout">
+      <span class="big-time" id="bigTime">--:--</span>
+      <span class="daypart" id="dayPart">...</span>
+    </div>
+  </main>
+
+  <footer class="site-footer">Made with ❤️ for Gui</footer>
+
+  <script>
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.getElementById('dial');
+    const CX = 200, CY = 200, R = 190;
+
+    function el(tag, attrs) {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+
+    // angle in degrees for a value on [0,24), 0/24 at top, clockwise
+    function angleFor(v) {
+      return -90 + (v / 24) * 360;
+    }
+    function pointFor(v, radius) {
+      const rad = angleFor(v) * Math.PI / 180;
+      return { x: CX + radius * Math.cos(rad), y: CY + radius * Math.sin(rad) };
+    }
+
+    // --- defs: gradients ---
+    const defs = el('defs', {});
+    const dayGrad = el('linearGradient', { id: 'dayGrad', x1: '0', y1: '0', x2: '1', y2: '1' });
+    dayGrad.appendChild(el('stop', { offset: '0%', 'stop-color': '#8fd3f4' }));
+    dayGrad.appendChild(el('stop', { offset: '100%', 'stop-color': '#fbe89b' }));
+    const nightGrad = el('linearGradient', { id: 'nightGrad', x1: '0', y1: '0', x2: '1', y2: '1' });
+    nightGrad.appendChild(el('stop', { offset: '0%', 'stop-color': '#1b1440' }));
+    nightGrad.appendChild(el('stop', { offset: '100%', 'stop-color': '#3a2f70' }));
+    defs.appendChild(dayGrad);
+    defs.appendChild(nightGrad);
+    svg.appendChild(defs);
+
+    // --- outer ring ---
+    svg.appendChild(el('circle', { cx: CX, cy: CY, r: R, fill: '#ffffff' }));
+
+    // --- day half (right) & night half (left) ---
+    const topPt = pointFor(24, R - 6);
+    const bottomPt = pointFor(12, R - 6);
+    const dayPath = `M ${topPt.x} ${topPt.y} A ${R - 6} ${R - 6} 0 0 1 ${bottomPt.x} ${bottomPt.y} L ${CX} ${CY} Z`;
+    const nightPath = `M ${topPt.x} ${topPt.y} A ${R - 6} ${R - 6} 0 0 0 ${bottomPt.x} ${bottomPt.y} L ${CX} ${CY} Z`;
+    svg.appendChild(el('path', { d: dayPath, fill: 'url(#dayGrad)' }));
+    svg.appendChild(el('path', { d: nightPath, fill: 'url(#nightGrad)' }));
+
+    // --- sun (day side) ---
+    const sunPos = pointFor(6, R * 0.55);
+    svg.appendChild(el('circle', { cx: sunPos.x, cy: sunPos.y, r: 22, fill: '#ffd23f', stroke: '#ffb700', 'stroke-width': 3 }));
+
+    // --- moon + stars (night side) ---
+    const moonPos = pointFor(18, R * 0.55);
+    const moon = el('circle', { cx: moonPos.x, cy: moonPos.y, r: 20, fill: '#fdf6d8' });
+    const moonBite = el('circle', { cx: moonPos.x + 9, cy: moonPos.y - 6, r: 17, fill: 'url(#nightGrad)' });
+    svg.appendChild(moon);
+    svg.appendChild(moonBite);
+    const starSpots = [
+      pointFor(15.5, R * 0.35), pointFor(19.5, R * 0.3), pointFor(21.5, R * 0.6), pointFor(16.5, R * 0.75)
+    ];
+    starSpots.forEach(p => {
+      svg.appendChild(el('circle', { cx: p.x, cy: p.y, r: 3.5, fill: '#fff' }));
+    });
+
+    // --- hour ticks + number badges ---
+    for (let v = 1; v <= 24; v++) {
+      const tickOuter = pointFor(v, R - 6);
+      const tickInner = pointFor(v, R - 16);
+      svg.appendChild(el('line', {
+        x1: tickOuter.x, y1: tickOuter.y, x2: tickInner.x, y2: tickInner.y,
+        stroke: '#ffffff', 'stroke-width': v % 6 === 0 ? 5 : 3, 'stroke-linecap': 'round', opacity: 0.85
+      }));
+
+      const badgePos = pointFor(v, R - 38);
+      const badgeR = v % 6 === 0 ? 22 : 18;
+      svg.appendChild(el('circle', {
+        cx: badgePos.x, cy: badgePos.y, r: badgeR, fill: '#ffffff',
+        stroke: '#2b2540', 'stroke-width': 2
+      }));
+      const text = el('text', {
+        x: badgePos.x, y: badgePos.y, class: 'badge-text',
+        style: `font-size:${v % 6 === 0 ? 24 : 19}px;`
+      });
+      text.textContent = v;
+      svg.appendChild(text);
+    }
+
+    // --- center hub ---
+    svg.appendChild(el('circle', { cx: CX, cy: CY, r: 14, fill: '#2b2540' }));
+
+    // --- hour hand ---
+    const hand = el('line', {
+      x1: CX, y1: CY, x2: CX, y2: CY - (R - 55),
+      stroke: '#ff6f59', 'stroke-width': 8, 'stroke-linecap': 'round'
+    });
+    svg.appendChild(hand);
+    svg.appendChild(el('circle', { cx: CX, cy: CY, r: 8, fill: '#ff6f59' }));
+
+    const bigTimeEl = document.getElementById('bigTime');
+    const dayPartEl = document.getElementById('dayPart');
+
+    function pad(n) { return n.toString().padStart(2, '0'); }
+
+    function tick() {
+      const now = new Date();
+      const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600 + now.getMilliseconds() / 3600000;
+      const deg = (h / 24) * 360;
+      hand.setAttribute('transform', `rotate(${deg} ${CX} ${CY})`);
+
+      bigTimeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const isDay = now.getHours() >= 6 && now.getHours() < 18;
+      dayPartEl.textContent = isDay ? '☀️ Daytime' : '🌙 Nighttime';
+      dayPartEl.className = 'daypart ' + (isDay ? 'day' : 'night');
+
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+</body>
+</html>
