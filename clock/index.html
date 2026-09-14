@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>24-Hour Clock — Gui's Tools</title>
+  <title>Relógio de 24 Horas — Ferramentas do Gui</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
@@ -69,9 +69,9 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="home-link" href="../">← All tools</a>
-    <h1>🕐 What time is it?</h1>
-    <p>One trip all the way around = one whole day</p>
+    <a class="home-link" href="../">← Todas as ferramentas</a>
+    <h1>🕐 Que horas são?</h1>
+    <p>Uma volta completa = um dia inteiro</p>
   </header>
 
   <main class="clock-main">
@@ -84,12 +84,13 @@
     </div>
   </main>
 
-  <footer class="site-footer">Made with ❤️ for Gui</footer>
+  <footer class="site-footer">Feito com ❤️ para o Gui</footer>
 
   <script>
     const NS = 'http://www.w3.org/2000/svg';
     const svg = document.getElementById('dial');
     const CX = 200, CY = 200, R = 190;
+    const SUNRISE = 7, SUNSET = 19;
 
     function el(tag, attrs) {
       const e = document.createElementNS(NS, tag);
@@ -121,26 +122,26 @@
     // --- outer ring ---
     svg.appendChild(el('circle', { cx: CX, cy: CY, r: R, fill: '#ffffff' }));
 
-    // --- day half (right) & night half (left) ---
-    const topPt = pointFor(24, R - 6);
-    const bottomPt = pointFor(12, R - 6);
-    const dayPath = `M ${topPt.x} ${topPt.y} A ${R - 6} ${R - 6} 0 0 1 ${bottomPt.x} ${bottomPt.y} L ${CX} ${CY} Z`;
-    const nightPath = `M ${topPt.x} ${topPt.y} A ${R - 6} ${R - 6} 0 0 0 ${bottomPt.x} ${bottomPt.y} L ${CX} ${CY} Z`;
+    // --- day half (sunrise..sunset) & night half (sunset..sunrise) ---
+    const sunrisePt = pointFor(SUNRISE, R - 6);
+    const sunsetPt = pointFor(SUNSET, R - 6);
+    const dayPath = `M ${sunrisePt.x} ${sunrisePt.y} A ${R - 6} ${R - 6} 0 0 1 ${sunsetPt.x} ${sunsetPt.y} L ${CX} ${CY} Z`;
+    const nightPath = `M ${sunsetPt.x} ${sunsetPt.y} A ${R - 6} ${R - 6} 0 0 1 ${sunrisePt.x} ${sunrisePt.y} L ${CX} ${CY} Z`;
     svg.appendChild(el('path', { d: dayPath, fill: 'url(#dayGrad)' }));
     svg.appendChild(el('path', { d: nightPath, fill: 'url(#nightGrad)' }));
 
-    // --- sun (day side) ---
-    const sunPos = pointFor(6, R * 0.55);
+    // --- sun (day side, centered between sunrise and sunset) ---
+    const sunPos = pointFor((SUNRISE + SUNSET) / 2, R * 0.55);
     svg.appendChild(el('circle', { cx: sunPos.x, cy: sunPos.y, r: 22, fill: '#ffd23f', stroke: '#ffb700', 'stroke-width': 3 }));
 
-    // --- moon + stars (night side) ---
-    const moonPos = pointFor(18, R * 0.55);
+    // --- moon + stars (night side, centered between sunset and sunrise) ---
+    const moonPos = pointFor(((SUNSET + SUNRISE + 24) / 2) % 24, R * 0.55);
     const moon = el('circle', { cx: moonPos.x, cy: moonPos.y, r: 20, fill: '#fdf6d8' });
     const moonBite = el('circle', { cx: moonPos.x + 9, cy: moonPos.y - 6, r: 17, fill: 'url(#nightGrad)' });
     svg.appendChild(moon);
     svg.appendChild(moonBite);
     const starSpots = [
-      pointFor(15.5, R * 0.35), pointFor(19.5, R * 0.3), pointFor(21.5, R * 0.6), pointFor(16.5, R * 0.75)
+      pointFor(20.5, R * 0.3), pointFor(22.5, R * 0.6), pointFor(0.5, R * 0.75), pointFor(3.5, R * 0.35)
     ];
     starSpots.forEach(p => {
       svg.appendChild(el('circle', { cx: p.x, cy: p.y, r: 3.5, fill: '#fff' }));
@@ -192,8 +193,8 @@
       hand.setAttribute('transform', `rotate(${deg} ${CX} ${CY})`);
 
       bigTimeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      const isDay = now.getHours() >= 6 && now.getHours() < 18;
-      dayPartEl.textContent = isDay ? '☀️ Daytime' : '🌙 Nighttime';
+      const isDay = now.getHours() >= SUNRISE && now.getHours() < SUNSET;
+      dayPartEl.textContent = isDay ? '☀️ Dia' : '🌙 Noite';
       dayPartEl.className = 'daypart ' + (isDay ? 'day' : 'night');
 
       requestAnimationFrame(tick);
